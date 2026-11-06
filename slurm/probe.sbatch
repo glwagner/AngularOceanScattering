@@ -52,6 +52,7 @@ for g in $GRIDS; do
   awk -F, 'NR>1{printf "  iter=%s wall=%.2f\n",$2,$1}' "$dir/steps.csv"
   rm -rf "$dir"
   [ "$status" != 0 ] && { echo "STOP: probe failed"; break; }
-  c1=$c2; p1=$p2; c2=$cells; p2=$peak
+  # Keep two distinct cell counts: an equal-size shape updates the point rather than giving a zero-width fit.
+  if [ "$cells" = "$c2" ]; then [ "$peak" -gt "$p2" ] && p2=$peak; else c1=$c2; p1=$p2; c2=$cells; p2=$peak; fi
 done
 echo "=== ladder done $(date -u +%T)"
