@@ -99,7 +99,7 @@ function main(config)
     if isfile(config_path)
         previous = TOML.parsefile(config_path)
         for key in keys(config)
-            key in ("stop_hours", "stop_iteration", "log_interval", "output_dir") || !haskey(previous, key) && continue
+            (key in ("stop_hours", "stop_iteration", "log_interval", "output_dir") || !haskey(previous, key)) && continue
             previous[key] == config[key] || error("Config mismatch for $key: run has $(previous[key]), got $(config[key])")
         end
     end
