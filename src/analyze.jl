@@ -118,7 +118,7 @@ jldopen(joinpath(dir, "xz_transect.jld2"), "r") do file
     iters = sort(parse.(Int, filter(!=("serialized"), keys(file["timeseries/t"]))))
     last_iter = iters[end]
     Tsec = dropdims(Float64.(file["timeseries/T/$last_iter"]); dims=2)
-    x = range(0, step=file["grid/Lx"] / size(Tsec, 1), length=size(Tsec, 1))
+    x = range(0, step=config["Lx"] / size(Tsec, 1), length=size(Tsec, 1))
     ax = Axis(fig[3, 2], xlabel="x (km)", ylabel="z (m)", title=@sprintf("T′ at y=j₁, t=%.0f h (K)", file["timeseries/t/$last_iter"] / 3600))
     anomaly = Tsec .- mean(Tsec, dims=1)
     m = max(maximum(abs, anomaly), 1e-6)

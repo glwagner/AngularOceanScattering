@@ -8,7 +8,6 @@
 
 using Oceananigans
 using Oceananigans.Units
-using Oceananigans: fields
 using Oceananigans.BoundaryConditions: FluxBoundaryCondition
 using CUDA
 using JLD2
@@ -174,7 +173,7 @@ function main(config)
     simulation.output_writers[:fields] = JLD2Writer(model, full_fields;
         filename=joinpath(dir, "fields.jld2"),
         schedule=TimeInterval(config["full_field_minutes"] * minutes),
-        array_type=Array{Float32}, overwrite_existing=false)
+        array_type=Array{Float32}, with_halos=false)
 
     avg(op) = Average(op, dims=(1, 2))
     profiles = (; U=avg(u), V=avg(v), T=avg(T), W=avg(w),
@@ -186,14 +185,14 @@ function main(config)
     simulation.output_writers[:profiles] = JLD2Writer(model, profiles;
         filename=joinpath(dir, "profiles.jld2"),
         schedule=TimeInterval(config["profile_minutes"] * minutes),
-        array_type=Array{Float32}, overwrite_existing=false)
+        array_type=Array{Float32}, with_halos=false)
 
     j = config["transect_j"]
     simulation.output_writers[:transect] = JLD2Writer(model, full_fields;
         filename=joinpath(dir, "xz_transect.jld2"),
         indices=(:, j, :),
         schedule=TimeInterval(config["transect_minutes"] * minutes),
-        array_type=Array{Float32}, overwrite_existing=false)
+        array_type=Array{Float32}, with_halos=false)
 
     volume_mean(op) = Average(op, dims=(1, 2, 3))
     budget = (; T=volume_mean(T), u=volume_mean(u), v=volume_mean(v),
@@ -201,7 +200,7 @@ function main(config)
     simulation.output_writers[:budget] = JLD2Writer(model, budget;
         filename=joinpath(dir, "budget.jld2"),
         schedule=TimeInterval(config["profile_minutes"] * minutes),
-        array_type=Array{Float64}, overwrite_existing=false)
+        array_type=Array{Float64}, with_halos=false)
 
     simulation.output_writers[:checkpointer] = Checkpointer(model;
         dir, prefix="checkpoint",
@@ -211,14 +210,12 @@ function main(config)
     # Step log: one CSV row per 20 iterations, appended across restarts.
     log_path = joinpath(dir, "steps.csv")
     isfile(log_path) || write(log_path, "wall_unix,iteration,time_s,dt_s,adv_cfl,diff_cfl,max_abs_u,max_abs_v,max_abs_w,min_T,max_T\n")
-    adv_cfl = AdvectiveCFL(wizard)
-    diff_cfl = DiffusiveCFL(wizard)
     wall₀ = Ref(time_ns())
     function log_step(sim)
         umax, vmax, wmax = maximum(abs, interior(u)), maximum(abs, interior(v)), maximum(abs, interior(w))
         Tmin, Tmax = minimum(interior(T)), maximum(interior(T))
         all(isfinite, (umax, vmax, wmax, Tmin, Tmax)) || error("Non-finite state at iteration $(iteration(sim))")
-        cfl, dcfl = adv_cfl(sim.model), diff_cfl(sim.model)
+        cfl, dcfl = AdvectiveCFL(sim.Δt)(sim.model), DiffusiveCFL(sim.Δt)(sim.model)
         open(log_path, "a") do io
             @printf(io, "%.3f,%d,%.3f,%.4f,%.4f,%.4f,%.5e,%.5e,%.5e,%.6f,%.6f\n", time(), iteration(sim),
                     sim.model.clock.time, sim.Δt, cfl, dcfl, umax, vmax, wmax, Tmin, Tmax)
