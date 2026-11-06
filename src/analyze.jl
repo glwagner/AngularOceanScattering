@@ -85,6 +85,42 @@ tke = reduce(hcat, [0.5 .* (prof["uu"][n] .- prof["U"][n] .^ 2 .+ prof["vv"][n] 
 @printf("INFO column-mean resolved TKE at end: %.3e m²/s²; surface-cell end %.3e\n", mean(tke[:, end]), tke[end, end])
 check("turbulence developed", mean(tke[:, end]) > 1e-6, @sprintf("column TKE %.3e", mean(tke[:, end])))
 
+# Interior stratification and grid-scale structure. Budgets cannot detect interior mixing, so test it directly.
+α, g = config["alpha"], config["g"]
+N²₀ = config["N2"]
+ku = argmin(abs.(zc .+ 100)); kl = argmin(abs.(zc .+ 140))
+interior_N²(T) = α * g * (T[ku] - T[kl]) / (zc[ku] - zc[kl])
+N²_series = interior_N².(prof["T"])
+rms_w(ww, z) = sqrt(max(ww[argmin(abs.([-Lz + (k - 1) * Δz for k in 1:length(ww)] .- z))], 0))
+for hour in (0, 1, 2, 4, 6, 12, 24, 48)
+    hour * 3600 > tp[end] + 1 && continue
+    n = argmin(abs.(tp .- hour * 3600))
+    @printf("INFO t=%2d h interior N²=%.3e (%.1f%% of initial) rms w(-100 m)=%.2e rms w(-20 m)=%.2e\n", hour, N²_series[n],
+            100 * N²_series[n] / N²₀, rms_w(prof["ww"][n], -100), rms_w(prof["ww"][n], -20))
+end
+check("interior stratification", minimum(N²_series) >= 0.9 * N²₀,
+      @sprintf("minimum interior N² (z=-100 to -140 m) is %.1f%% of initial; must stay at least 90%%", 100 * minimum(N²_series) / N²₀))
+
+# Lag-1 autocorrelation along x; near 1 for resolved eddies, near 0 or negative for grid-scale noise.
+function lag1(a)
+    b = a .- mean(a)
+    s = sum(abs2, b)
+    return s > 0 ? sum(b .* circshift(b, 1)) / s : NaN
+end
+jldopen(joinpath(dir, "xz_transect.jld2"), "r") do file
+    iters = sort(parse.(Int, filter(!=("serialized"), keys(file["timeseries/t"]))))
+    times = [file["timeseries/t/$i"] for i in iters]
+    for hour in (3, 12, 48)
+        hour * 3600 > times[end] + 1 && continue
+        i = iters[argmin(abs.(times .- hour * 3600))]
+        for z in (-20, -100)
+            kc = argmin(abs.(zc .- z))
+            w = Float64.(file["timeseries/w/$i"][:, 1, kc]); T = Float64.(file["timeseries/T/$i"][:, 1, kc])
+            @printf("INFO t=%2d h z=%4d m: x lag-1 correlation w=%.3f T=%.3f; rms w=%.2e rms T'=%.2e\n", hour, z, lag1(w), lag1(T), std(w), std(T))
+        end
+    end
+end
+
 # Full-field finiteness at every save
 nonfinite = 0; nsaved = 0
 jldopen(joinpath(dir, "fields.jld2"), "r") do file

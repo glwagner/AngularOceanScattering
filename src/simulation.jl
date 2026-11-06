@@ -39,6 +39,7 @@ const DEFAULTS = Dict{String, Any}(
     "max_dt" => 150.0,             # s; N Δt ≈ 0.47, see README
     "initial_dt" => 5.0,           # s
     "stop_hours" => 48.0,
+    "stop_iteration" => 0,         # > 0 stops after this many iterations (memory and speed probes)
     "full_field_minutes" => 60.0,
     "profile_minutes" => 5.0,
     "transect_minutes" => 5.0,
@@ -97,7 +98,7 @@ function main(config)
     if isfile(config_path)
         previous = TOML.parsefile(config_path)
         for key in keys(config)
-            key in ("stop_hours", "output_dir") && continue
+            key in ("stop_hours", "stop_iteration", "output_dir") && continue
             previous[key] == config[key] || error("Config mismatch for $key: run has $(previous[key]), got $(config[key])")
         end
     end
@@ -158,6 +159,7 @@ function main(config)
     set!(model, T=Tᵢ)
 
     simulation = Simulation(model; Δt=config["initial_dt"], stop_time=config["stop_hours"] * hours)
+    config["stop_iteration"] > 0 && (simulation.stop_iteration = config["stop_iteration"])
     wizard = TimeStepWizard(cfl=config["cfl"], diffusive_cfl=config["diffusive_cfl"],
                             max_change=1.1, max_Δt=config["max_dt"])
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(5))
@@ -223,6 +225,7 @@ function main(config)
         @info @sprintf("iter %d t=%.3f h Δt=%.2f s CFL=%.3f dCFL=%.3f |u|=%.3e |w|=%.3e T=[%.4f, %.4f] wall=%.1f s",
                        iteration(sim), sim.model.clock.time / 3600, sim.Δt, cfl, dcfl, umax, wmax, Tmin, Tmax,
                        (time_ns() - wall₀[]) * 1e-9)
+        flush(stdout); flush(stderr)  # logs go to a file: do not let buffering look like a stall
     end
     simulation.callbacks[:log] = Callback(log_step, IterationInterval(20))
 
