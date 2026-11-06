@@ -135,3 +135,33 @@ Stepping between saves: 0.79 s/step at 368.6M cells. A checkpoint plus full save
 ### Estimated time
 
 About 16 500 steps (if the box's median Δt of 10.5 s holds) × 0.79 s = 3.6 h, 16 checkpoints × about 190 s = 0.85 h, plus other output: about 5 h. Limit 12 h.
+
+## Production result (job 8939): completed, failed the interior-stratification check
+
+Run `production-4m2m`, git a0cc433, 5120×900×80, 20.48 × 3.60 × 0.16 km, CFL 0.4, `max_dt` 20 s, no restarts.
+
+**Validation job 8940 failed.** Interior N² (z = −100 to −140 m) fell to 87.3% of initial; the check requires at least 90%. The
+threshold has not been changed. Treat the interior below the mixed layer as not validated, especially late in the run.
+
+| Time | Interior N², % of initial | rms w at −100 m |
+|---|---|---|
+| 6 h | 100.4 | 1.44e-3 m/s |
+| 12 h | 99.8 | 2.14e-3 m/s |
+| 24 h | 95.7 | 1.71e-3 m/s |
+| 48 h | 87.3 | 1.63e-3 m/s |
+
+The 12 h value matches the fine box, whose 12 h length could not show this later decline. The cause is not established:
+closure comparisons (job 8917) have not run on this grid, and resolved and subgrid contributions have not been separated.
+
+All other checks passed:
+
+- Final time 48.000 h; 577 budget records; 36 saved full-field arrays, 0 non-finite.
+- Heat: ΔT = −1.32037e-2 K, max error 2.84e-14 K against exact.
+- Momentum: inertial amplitude 3.0488e-3 m/s, max error 2.72e-12 (u), 2.50e-12 (v) m/s.
+- Advective CFL at most 0.400; diffusive CFL at most 0.247; median Δt 10.0 s.
+- Mixed layer 33.9 → 47.1 m; column-mean resolved TKE at end 2.518e-5 m²/s².
+- x lag-1 correlation of w at 48 h: 0.949 at −20 m, 0.775 at −100 m.
+
+Cost: 16 970 steps, 16 267 s (4.52 h) wall including I/O, 958.6 ms/step mean. Slurm elapsed 4:32:33.
+GPU: 66450 MiB by nvidia-smi early in the run (not sampled continuously); CUDA 64.92 of 79.10 GiB at the end. Peak host RSS
+45.9 GiB. Disk: 98 GB, including one 44.8 GB checkpoint. No figure has been made for this run.
