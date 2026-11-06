@@ -15,7 +15,7 @@ set -euo pipefail
 REPO=${AOS_REPO:-$HOME/AngularOceanScattering}
 SCRATCH=${AOS_SCRATCH:-/shared/greg_aeolus_earth/AngularOceanScattering}
 RUN=$1; shift
-RUN_DIR=$SCRATCH/runs/$RUN
+RUN_DIR=${AOS_RUNS:-$SCRATCH/runs}/$RUN
 mkdir -p "$RUN_DIR"
 
 ulimit -v unlimited

@@ -86,3 +86,52 @@ Ran to 2.5 h with a checkpoint at 2 h, then resumed to 3.5 h (revision `798aab51
 - Production itself had no restart.
 
 Job 8847 failed before stepping on a `JLD2Writer` keyword error, since fixed.
+
+# 4 m / 2 m campaign
+
+Δx = Δy = 4 m, Δz = 2 m, Lz = 160 m (Nz = 80); forcing, rotation, initial state and stratification unchanged.
+
+## Diagnosis of the coarse interior mixing (job 8902)
+
+| Case | Interior N² at end | Note |
+|---|---|---|
+| Coarse rest (10 m, no forcing or noise, 6 h) | 100% | exactly zero velocity |
+| Coarse, CFL 0.2, Δt ≤ 10 s, 12 h | 59% | nearly identical to production (w correlation 1.000 at 6 h, 0.97 at 12 h): time step is not the cause there |
+| Fine box, CFL 0.8, 12 h | 99.9% | ML 38.0 m, TKE 2.127e-5, w lag-1 0.85 at −100 m |
+| Fine box, CFL 0.4, Δt ≤ 20 s, 12 h | 99.8% | ML 38.0 m, TKE 2.119e-5, w lag-1 0.85 |
+| Fine box, CFL 0.2, Δt ≤ 5 s, 12 h | 99.8% | ML 38.0 m, TKE 2.104e-5, w lag-1 0.84 |
+| Fine rest, 6 h | 100% | exactly zero velocity |
+
+Fine box: 256 × 256 × 80, 1024 × 1024 × 160 m, AMD, WENO 5. In the coarse case AMD κₑ reaches about 0.03 m²/s at −120 m and its
+flux (about 1e-4 K m/s) far exceeds the resolved flux, so the closure carries the interior mixing there. Why the coarse grid
+excites it has not been established; closure comparisons (job 8917) are held and noncritical.
+Fine-box rms w at −100 m is still about 2e-3 m/s; whether that is physical has not been determined.
+
+Production uses CFL 0.4, `max_dt` 20 s, chosen as a margin: the 12 h box shows no Δt sensitivity between CFL 0.2 and 0.8.
+
+## Capacity probes (real output and one checkpoint, H100 card total 81559 MiB, limit 85% = 69325 MiB)
+
+| Grid | Cells | Lx × Ly (km) | nvidia-smi peak | Live / reserved | Host RSS | Checkpoint | Full save |
+|---|---|---|---|---|---|---|---|
+| 1024×256×80 | 21.0M | 4.10 × 1.02 | 4626 MiB (5%) | 3.40 / 3.88 GiB | 4.7 GiB | 2.5 GB | |
+| 2048×256×80 | 41.9M | 8.19 × 1.02 | 8274 MiB (10%) | 6.78 / 7.44 GiB | 6.9 GiB | 4.9 GB | |
+| **5120×900×80** | **368.6M** | **20.48 × 3.60** | **66450 MiB (81%)** | 58.70 / 64.25 GiB | 50.5 GiB | 42 GB | 3.6 GB (each, compressed, early laminar state) |
+| 5120×960×80 | 393.2M | 20.48 × 3.84 | not run: predicted 70826 MiB, over limit | | | | |
+
+Selected: 5120×900×80, the largest tested grid within the limit. Probes ran 30 steps, so these peaks do not cover a long run or a checkpoint from developed turbulence.
+
+Stepping between saves: 0.79 s/step at 368.6M cells. A checkpoint plus full save took about 200 s.
+
+### Storage budget, 48 h (uncompressed worst case), on /home (about 300 GB free)
+
+| Item | Total |
+|---|---|
+| Full fields, 6-hourly, 9 × 5.9 GB | 53 GB |
+| xy planes at 4 m and 40 m, u, w, T, 10 min | 32 GB |
+| xz and yz sections, 5 min | 4.5 GB |
+| Two checkpoints during cleanup, 2 × 66 GB | 132 GB |
+| Peak | about 222 GB |
+
+### Estimated time
+
+About 16 500 steps (if the box's median Δt of 10.5 s holds) × 0.79 s = 3.6 h, 16 checkpoints × about 190 s = 0.85 h, plus other output: about 5 h. Limit 12 h.
