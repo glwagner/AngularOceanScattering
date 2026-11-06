@@ -84,8 +84,9 @@ sbatch --time=H:MM:SS --output=/shared/greg_aeolus_earth/AngularOceanScattering/
 # Any parameter can be overridden
 sbatch --time=0:30:00 --output=LOG slurm/run.sbatch pilot stop_hours=2
 
-# Validate and draw the figure, from the run's config.toml
-sbatch --time=0:30:00 --output=LOG slurm/analyze.sbatch NAME
+# Validate against the run's config.toml; loads neither CUDA nor Oceananigans
+sbatch --time=0:30:00 --output=LOG slurm/analyze.sbatch NAME            # numbers only
+sbatch --time=0:40:00 --output=LOG slurm/analyze.sbatch NAME --figure   # plus figure
 ```
 
 **Restart.** Rerunning with the same `RUN_NAME` resumes from the newest checkpoint, and requeue after preemption does
