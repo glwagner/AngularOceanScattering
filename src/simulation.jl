@@ -251,12 +251,20 @@ function main(config)
                        elapsed, steps, 1e3 * elapsed / max(steps, 1), model.clock.time / 3600,
                        string(simulation.stop_time))
     @info "Finished run" summary iteration=iteration(simulation)
-    if arch isa GPU
-        println("GPU memory after run (live vs pool-reserved):")
-        CUDA.memory_status()
-        println()
+    # Reporting must not turn a finished run into a failed job; a failure here is recorded, not thrown.
+    try
+        if arch isa GPU
+            @printf("GPU memory after run: live pool-used=%.2f GiB, pool-reserved=%.2f GiB\n",
+                    CUDA.used_memory() / 2^30, CUDA.cached_memory() / 2^30)
+            CUDA.pool_status()
+            println()
+        end
+        @printf("Peak host RSS: %.2f GiB\n", Sys.maxrss() / 2^30)
+    catch err
+        msg = "Memory report failed: " * sprint(showerror, err)
+        @error msg
+        open(io -> println(io, msg), joinpath(dir, "run_summary.txt"), "a")
     end
-    @printf("Peak host RSS: %.2f GiB\n", Sys.maxrss() / 2^30)
     flush(stdout); flush(stderr)
     open(joinpath(dir, "run_summary.txt"), "a") do io
         println(io, "job=", get(ENV, "SLURM_JOB_ID", "none"), " ", summary)

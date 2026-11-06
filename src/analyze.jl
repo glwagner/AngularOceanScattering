@@ -42,14 +42,16 @@ Jᵀ = Q / (ρ₀ * cp); Jᵤ = -τ / ρ₀
 ΔT_exact = @. -Jᵀ * tb / Lz
 ΔT = T̄ .- T̄[1]
 err_T = maximum(abs, ΔT .- ΔT_exact)
-check("heat budget sign+magnitude", ΔT[end] < 0 && err_T <= 0.01 * abs(ΔT_exact[end]),
+unforced = config["tau_x"] == 0 && config["Q_loss"] == 0
+unforced && println("INFO zero forcing: expecting quiescence instead of cooling, mixed-layer growth and turbulence")
+check("heat budget sign+magnitude", (unforced || ΔT[end] < 0) && err_T <= (unforced ? 1e-10 : 0.01 * abs(ΔT_exact[end])),
       @sprintf("ΔT=%.5e K exact=%.5e K max|err|=%.2e K", ΔT[end], ΔT_exact[end], err_T))
 
 U₀ = -Jᵤ / (Lz * f)
 Ū_exact = @. U₀ * sin(f * tb)
 V̄_exact = @. U₀ * (cos(f * tb) - 1)
 err_U = maximum(abs, Ū .- Ū_exact); err_V = maximum(abs, V̄ .- V̄_exact)
-check("momentum budget (inertial)", max(err_U, err_V) <= 0.01 * U₀,
+check("momentum budget (inertial)", max(err_U, err_V) <= (unforced ? 1e-10 : 0.01 * U₀),
       @sprintf("amplitude=%.4e m/s max|err u|=%.2e max|err v|=%.2e", U₀, err_U, err_V))
 
 # Step log: CFL, Δt, extrema
@@ -78,12 +80,13 @@ function mixed_layer_depth(T; ΔT=0.02)
 end
 h = mixed_layer_depth.(prof["T"])
 @printf("INFO mixed-layer depth (ΔT=0.02 K below top cell): t=0 %.1f m, end %.1f m, max %.1f m\n", h[1], h[end], maximum(h))
-check("mixed layer evolves", h[end] > h[1] + 1 && h[end] < Lz, @sprintf("%.1f m -> %.1f m", h[1], h[end]))
+unforced || check("mixed layer evolves", h[end] > h[1] + 1 && h[end] < Lz, @sprintf("%.1f m -> %.1f m", h[1], h[end]))
 at_center(a) = length(a) == Nz ? a : (a[1:end-1] .+ a[2:end]) / 2
 tke = reduce(hcat, [0.5 .* (prof["uu"][n] .- prof["U"][n] .^ 2 .+ prof["vv"][n] .- prof["V"][n] .^ 2 .+ at_center(prof["ww"][n]))
                     for n in eachindex(tp)])
 @printf("INFO column-mean resolved TKE at end: %.3e m²/s²; surface-cell end %.3e\n", mean(tke[:, end]), tke[end, end])
-check("turbulence developed", mean(tke[:, end]) > 1e-6, @sprintf("column TKE %.3e", mean(tke[:, end])))
+unforced && check("quiescent", maximum(abs, tke) <= 1e-12, ("max TKE %.3e", maximum(abs, tke)))
+unforced || check("turbulence developed", mean(tke[:, end]) > 1e-6, @sprintf("column TKE %.3e", mean(tke[:, end])))
 
 # Interior stratification and grid-scale structure. Budgets cannot detect interior mixing, so test it directly.
 α, g = config["alpha"], config["g"]
