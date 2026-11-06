@@ -42,7 +42,7 @@ for g in $GRIDS; do
   # 30 steps from Δt=5 s reach about 3 minutes: saves at t=0 and 2 min, one checkpoint at 2 min.
   julia --startup-file=no --project="$REPO" "$REPO/src/simulation.jl" "output_dir=$dir" Nx=$Nx Ny=$Ny Nz=80 \
       Lx=$((4*Nx)).0 Ly=$((4*Ny)).0 Lz=160.0 cfl=$CFL max_dt=$MAX_DT stop_iteration=30 log_interval=5 \
-      checkpoint_minutes=2.0 full_field_minutes=2.0 profile_minutes=2.0 transect_minutes=2.0 2>&1 \
+      checkpoint_minutes=2.0 full_field_minutes=2.0 profile_minutes=2.0 transect_minutes=2.0 slice_minutes=2.0 2>&1 \
       | grep -E 'ERROR|Out of GPU|summary|GPU memory|Effective|Memory pool|Peak host|iter [0-9]+ t='
   status=${PIPESTATUS[0]}
   kill $sampler; peak=$(sort -n "$smi" | tail -1); rm -f "$smi"

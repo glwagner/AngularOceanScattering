@@ -45,6 +45,9 @@ const DEFAULTS = Dict{String, Any}(
     "transect_minutes" => 5.0,
     "checkpoint_minutes" => 60.0,
     "transect_j" => 1,
+    "slice_minutes" => 10.0,
+    "slice_depth_upper" => 4.0,    # m, above the initial mixed-layer base
+    "slice_depth_lower" => 40.0,   # m, below it
     "log_interval" => 20,
     "architecture" => "GPU",
     "output_dir" => "output",
@@ -197,6 +200,23 @@ function main(config)
         schedule=TimeInterval(config["transect_minutes"] * minutes),
         array_type=Array{Float32}, with_halos=false)
 
+    # Horizontal slices for animation: near the surface and below the initial mixed layer.
+    Δzₒ = Lz / Nz
+    for (name, depth) in (("xy_upper", config["slice_depth_upper"]), ("xy_lower", config["slice_depth_lower"]))
+        k = clamp(Nz - floor(Int, depth / Δzₒ), 1, Nz)
+        simulation.output_writers[Symbol(name)] = JLD2Writer(model, (; u, w, T);
+            filename=joinpath(dir, name * ".jld2"),
+            indices=(:, :, k),
+            schedule=TimeInterval(config["slice_minutes"] * minutes),
+            array_type=Array{Float32}, with_halos=false)
+    end
+    # Cross-track section for animation.
+    simulation.output_writers[:yz] = JLD2Writer(model, full_fields;
+        filename=joinpath(dir, "yz_transect.jld2"),
+        indices=(1, :, :),
+        schedule=TimeInterval(config["transect_minutes"] * minutes),
+        array_type=Array{Float32}, with_halos=false)
+
     volume_mean(op) = Average(op, dims=(1, 2, 3))
     budget = (; T=volume_mean(T), u=volume_mean(u), v=volume_mean(v),
               KE=volume_mean((u * u + v * v + w * w) / 2))
@@ -235,7 +255,7 @@ function main(config)
         @info "Starting from the initial condition"
         pickup = false
     else
-        for name in ("fields", "profiles", "xz_transect", "budget")
+        for name in ("fields", "profiles", "xz_transect", "yz_transect", "xy_upper", "xy_lower", "budget")
             removed = truncate_output!(joinpath(dir, name * ".jld2"), pickup_iteration)
             @info "Pickup truncation" name pickup_iteration removed
         end
