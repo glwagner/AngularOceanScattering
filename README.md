@@ -16,7 +16,7 @@ This is a coarse **proof of concept** at 10 m spacing in all directions.
   absolute scattering amplitudes**. The velocity and sound-speed spectra are truncated near 2-6Δ (20-60 m) by the grid
   and numerical dissipation.
 - With Ly = 640 m and Lz = 160 m, the domain is narrow and shallow compared with Lx. It contains no submesoscale
-  dynamics, and the 10 km periodic x direction means a path samples a repeating domain.
+  dynamics, and x is periodic: a 10 km path fits inside the 10.24 km domain and does not repeat eddies. Repetition begins only for paths longer than Lx.
 - A rigid lid is used, so there are no surface waves and no Langmuir turbulence.
 - There is no sponge layer: internal waves reflect from the free-slip, insulating bottom at 160 m.
 
