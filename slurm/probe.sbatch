@@ -23,7 +23,8 @@ mkdir -p "$PROBE_ROOT"
 TOTAL=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits)
 LIMIT=$((TOTAL*HEADROOM_PCT/100))
 echo "git=$(git -C "$REPO" rev-parse HEAD) card_total_MiB=$TOTAL limit_MiB=$LIMIT probe_root=$PROBE_ROOT"
-c1=0; p1=0; c2=0; p2=0
+# Optional seed from earlier measurements: AOS_SEED="cells1 peak1 cells2 peak2"
+read -r c1 p1 c2 p2 <<< "${AOS_SEED:-0 0 0 0}"
 for g in $GRIDS; do
   Nx=${g%x*}; Ny=${g#*x}; cells=$((Nx*Ny*80)); name=probe-${Nx}x${Ny}; dir=$PROBE_ROOT/$name
   if [ "$c1" != 0 ]; then
