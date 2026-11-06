@@ -1,6 +1,10 @@
 # Run log
 
-## production-48h: job 8854 (completed and numerically validated)
+## production-48h: job 8854 (completed; budgets pass; interior mixing suspect)
+> **WARNING: do not use this dataset as boundary-layer turbulence yet.** The run finished and passed its budget checks,
+> but the figure and follow-up numbers show the stratified interior being stirred, which looks unphysical.
+> The cause has not been diagnosed. See "Suspect interior mixing" below.
+
 
 Coarse 10 m proof of concept; see the limits in `README.md`.
 
@@ -30,7 +34,7 @@ These rates include all output I/O to NFS. The cost of stepping alone was not me
 - Warm startup: jobs 8851 and 8852 took about 1:15 outside `run!` (2:10 total with 53.9 s in `run!`; 2:02 total with 44.8 s).
 - 8854 was held up about 6 minutes: `strace` showed it retrying the CUDA precompile lockfile while the smoke analysis, 8853, was compiling the full environment in the same depot. 8853 was cancelled and its lockfiles removed. Analysis no longer precompiles the full environment.
 
-### Numerical validation (`src/analyze.jl`, job 8860): all checks passed
+### Numerical validation (`src/analyze.jl`, job 8860): all coded checks passed, but they do not detect the problem below
 
 | Check | Result |
 |---|---|
@@ -50,6 +54,27 @@ These rates include all output I/O to NFS. The cost of stepping alone was not me
 - The budgets test conservation and flux signs. They do not test turbulence quality, which at 3-5 cells per mixed layer depends on the closure and advection scheme.
 - 0.02 K is about 4 m of the initial stratification, so the 32.8 m starting depth comes from that definition; the prescribed value is 30 m.
 - The saved fields have not been assessed for acoustic use.
+
+### Suspect interior mixing
+
+Found from the figure (job 8861) and measured from the saved profiles and transects. The forcing should not stir water at 100 m:
+with u* = 7e-3 m/s and N² = 1e-5 s⁻², the boundary layer is expected to stay within a few tens of metres.
+
+| t (h) | N² at z = −100 to −140 m (s⁻²) | rms w at z ≈ −100 m (m/s) | rms w at z ≈ −20 m (m/s) |
+|---|---|---|---|
+| 0 | 1.00e-5 | 0 | 0 |
+| 1 | 1.00e-5 | 4.5e-4 | 2.8e-3 |
+| 2 | 9.85e-6 | 3.9e-3 | 2.6e-3 |
+| 4 | 8.57e-6 | 4.6e-3 | 2.1e-3 |
+| 12 | 6.12e-6 | 3.6e-3 | 1.8e-3 |
+| 24 | 4.06e-6 | 2.9e-3 | 1.9e-3 |
+| 48 | 2.34e-6 | 2.1e-3 | 2.6e-3 |
+
+- Interior N² falls 77% in 48 h, and from about 2 h to 24 h w at −100 m exceeds w in the mixed layer.
+- At 3 h the x-direction lag-1 autocorrelation of T′ and w is about 0.0-0.2 at z ≈ −125 m and z ≈ −25 m: grid-scale noise, not resolved eddies. By 48 h it rises to 0.5-0.9.
+- So the 32.8 to 45.4 m mixed-layer deepening and the TKE values are not trustworthy as boundary-layer results. The saved heat and momentum budgets still close because they cannot detect interior mixing.
+
+Not yet diagnosed. Untested candidates: the noise seed exciting grid-scale motion, time-stepping at CFL 0.8 with weak forcing (RK3 + WENO on a 10 m grid), and the closure. Bottom reflection and the lack of a sponge may let waves persist. A short sensitivity test on the H100 should separate these.
 
 ## smoke: jobs 8851 and 8852 (restart test)
 
