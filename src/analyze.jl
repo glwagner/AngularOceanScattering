@@ -85,7 +85,7 @@ at_center(a) = length(a) == Nz ? a : (a[1:end-1] .+ a[2:end]) / 2
 tke = reduce(hcat, [0.5 .* (prof["uu"][n] .- prof["U"][n] .^ 2 .+ prof["vv"][n] .- prof["V"][n] .^ 2 .+ at_center(prof["ww"][n]))
                     for n in eachindex(tp)])
 @printf("INFO column-mean resolved TKE at end: %.3e m²/s²; surface-cell end %.3e\n", mean(tke[:, end]), tke[end, end])
-unforced && check("quiescent", maximum(abs, tke) <= 1e-12, ("max TKE %.3e", maximum(abs, tke)))
+unforced && check("quiescent", maximum(abs, tke) <= 1e-12, @sprintf("max TKE %.3e", maximum(abs, tke)))
 unforced || check("turbulence developed", mean(tke[:, end]) > 1e-6, @sprintf("column TKE %.3e", mean(tke[:, end])))
 
 # Interior stratification and grid-scale structure. Budgets cannot detect interior mixing, so test it directly.
