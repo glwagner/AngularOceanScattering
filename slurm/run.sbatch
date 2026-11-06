@@ -3,6 +3,7 @@
 #SBATCH --partition=gpuprod
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
+#SBATCH --mem=180G
 #SBATCH --nodes=1
 #SBATCH --requeue
 #SBATCH --open-mode=append

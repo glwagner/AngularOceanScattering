@@ -250,6 +250,13 @@ function main(config)
                        elapsed, steps, 1e3 * elapsed / max(steps, 1), model.clock.time / 3600,
                        string(simulation.stop_time))
     @info "Finished run" summary iteration=iteration(simulation)
+    if arch isa GPU
+        println("GPU memory after run (live vs pool-reserved):")
+        CUDA.memory_status()
+        println()
+    end
+    @printf("Peak host RSS: %.2f GiB\n", Sys.maxrss() / 2^30)
+    flush(stdout); flush(stderr)
     open(joinpath(dir, "run_summary.txt"), "a") do io
         println(io, "job=", get(ENV, "SLURM_JOB_ID", "none"), " ", summary)
     end
