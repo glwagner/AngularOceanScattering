@@ -45,6 +45,7 @@ const DEFAULTS = Dict{String, Any}(
     "transect_minutes" => 5.0,
     "checkpoint_minutes" => 60.0,
     "transect_j" => 1,
+    "log_interval" => 20,
     "architecture" => "GPU",
     "output_dir" => "output",
 )
@@ -98,7 +99,7 @@ function main(config)
     if isfile(config_path)
         previous = TOML.parsefile(config_path)
         for key in keys(config)
-            key in ("stop_hours", "stop_iteration", "output_dir") && continue
+            key in ("stop_hours", "stop_iteration", "log_interval", "output_dir") || !haskey(previous, key) && continue
             previous[key] == config[key] || error("Config mismatch for $key: run has $(previous[key]), got $(config[key])")
         end
     end
@@ -227,7 +228,7 @@ function main(config)
                        (time_ns() - wall₀[]) * 1e-9)
         flush(stdout); flush(stderr)  # logs go to a file: do not let buffering look like a stall
     end
-    simulation.callbacks[:log] = Callback(log_step, IterationInterval(20))
+    simulation.callbacks[:log] = Callback(log_step, IterationInterval(config["log_interval"]))
 
     pickup_iteration = latest_checkpoint_iteration(dir)
     if pickup_iteration === nothing
