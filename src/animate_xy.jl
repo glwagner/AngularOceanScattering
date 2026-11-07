@@ -81,7 +81,7 @@ function main(run_dir, out, nmax=typemax(Int))
                   title=@sprintf("%s, %s (%s), 1.536 km detail at native %.0f m", v == "w" ? "Vertical velocity w′" : "Temperature T′",
                                  zlabel(L), L[3], Δx), titlesize=17)
         hm = heatmap!(ax, x[ix], y[iy], detail[(d, v)]; colormap=v == "w" ? :balance : Reverse(:RdBu),
-                      colorrange=(-1, 1) .* lims[(d, v)] * scale(v), interpolate=false)
+                      colorrange=(-1, 1) .* (lims[(d, v)] * scale(v)), interpolate=false)
         Colorbar(figd[row + 1, 2col], hm; label=unit(v), height=Relative(0.85))
     end
     Label(figd[4, 1:4], forcing * "\n" * limits_note * "\n" * CAVEAT; fontsize=14, color=:gray35, justification=:center, word_wrap=true)
@@ -97,7 +97,7 @@ function main(run_dir, out, nmax=typemax(Int))
         ax = Axis(figo[row, 1]; aspect=DataAspect(), ylabel="y (km)", xlabel=row == 5 ? "x (km)" : "",
                   title=@sprintf("%s, %s (%s), full %.2f × %.2f km domain", v == "w" ? "w′" : "T′", zlabel(L), L[3], Lx / 1e3, Ly / 1e3), titlesize=17)
         hm = heatmap!(ax, x, y, full[(d, v)]; colormap=v == "w" ? :balance : Reverse(:RdBu),
-                      colorrange=(-1, 1) .* lims[(d, v)] * scale(v), interpolate=false)
+                      colorrange=(-1, 1) .* (lims[(d, v)] * scale(v)), interpolate=false)
         lines!(ax, x[first(ix)] .+ [-0.5, nd - 0.5, nd - 0.5, -0.5, -0.5] .* Δx / 1e3,
                y[first(iy)] .+ [-0.5, -0.5, nd - 0.5, nd - 0.5, -0.5] .* Δy / 1e3; color=:black, linewidth=1.5)
         Colorbar(figo[row, 2], hm; label=unit(v))
