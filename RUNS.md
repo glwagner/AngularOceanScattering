@@ -165,3 +165,20 @@ All other checks passed:
 Cost: 16 970 steps, 16 267 s (4.52 h) wall including I/O, 958.6 ms/step mean. Slurm elapsed 4:32:33.
 GPU: 66450 MiB by nvidia-smi early in the run (not sampled continuously); CUDA 64.92 of 79.10 GiB at the end. Peak host RSS
 45.9 GiB. Disk: 98 GB, including one 44.8 GB checkpoint. No figure has been made for this run.
+
+### Where the interior N² loss occurs (`src/n2_depth.jl`, from `profiles.jld2`)
+
+| Layer (m) | 12 h | 24 h | 36 h | 48 h (% of initial N²) |
+|---|---|---|---|---|
+| −50 to −60 | 96.1 | 91.7 | 87.5 | 82.3 |
+| −70 to −80 | 99.4 | 98.3 | 96.8 | 94.7 |
+| −90 to −100 | 100.1 | 99.7 | 98.9 | 97.2 |
+| −110 to −120 | 100.4 | 99.3 | 96.8 | 93.4 |
+| −130 to −140 | 99.0 | 90.2 | 82.9 | 77.3 |
+| −150 to −160 | 56.6 | 42.8 | 36.4 | 32.9 |
+
+The failed bulk metric (−100 to −140 m) is dominated by loss growing upward from the bottom. Mid-column N² stays at 97%.
+Averaged over the last 6 h, mean κₑ is about 2e-3 m²/s from −140 to −60 m. The diffusive heat flux estimated from mean κₑ and
+mean ∂T/∂z (about −1.1e-5 K m/s at −100 m, ignoring κ′∂T′/∂z covariance) is about 10 times the resolved ⟨wT⟩ (about 9e-7).
+√(κₑ t) over 48 h is about 19 m, and the deep warming (+0.023 K at −138 m) has the sign expected for downward flux converging at
+the no-flux bottom. This points to AMD subgrid diffusion acting below the mixed layer, but no closure comparison has confirmed it.
