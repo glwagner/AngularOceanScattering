@@ -62,7 +62,10 @@ function main(run_dir, out, nmax=typemax(Int))
 
     scale(v) = 1e3                                     # w′ in mm/s, T′ in mK
     unit(v) = v == "w" ? "w′ (mm/s)" : "T′ (mK)"
-    full = Dict(k => Observable(zeros(Float32, Nx, Ny)) for k in keyset)
+    B = 4                                              # overview: B × B block average for display
+    blockavg(A) = Float32.(dropdims(mean(reshape(A, B, size(A, 1) ÷ B, B, size(A, 2) ÷ B); dims=(1, 3)); dims=(1, 3)))
+    xo = (collect(1:Nx ÷ B) .- 0.5) .* B * Δx ./ 1e3; yo = (collect(1:Ny ÷ B) .- 0.5) .* B * Δy ./ 1e3
+    full = Dict(k => Observable(zeros(Float32, Nx ÷ B, Ny ÷ B)) for k in keyset)
     detail = Dict(k => Observable(zeros(Float32, nd, nd)) for k in keyset)
     tlabel = Observable("")
     title = @sprintf("Surface-forced ocean boundary layer LES: horizontal slices (Δx = Δy = %.0f m, Δz = %.0f m; %d × %d × %d)",
@@ -96,21 +99,21 @@ function main(run_dir, out, nmax=typemax(Int))
         L = levels[d][v == "w" ? 1 : 2]
         ax = Axis(figo[row, 1]; aspect=DataAspect(), ylabel="y (km)", xlabel=row == 5 ? "x (km)" : "",
                   title=@sprintf("%s, %s (%s), full %.2f × %.2f km domain", v == "w" ? "w′" : "T′", zlabel(L), L[3], Lx / 1e3, Ly / 1e3), titlesize=17)
-        hm = heatmap!(ax, x, y, full[(d, v)]; colormap=v == "w" ? :balance : Reverse(:RdBu),
+        hm = heatmap!(ax, xo, yo, full[(d, v)]; colormap=v == "w" ? :balance : Reverse(:RdBu),
                       colorrange=(-1, 1) .* (lims[(d, v)] * scale(v)), interpolate=false)
         lines!(ax, x[first(ix)] .+ [-0.5, nd - 0.5, nd - 0.5, -0.5, -0.5] .* Δx / 1e3,
                y[first(iy)] .+ [-0.5, -0.5, nd - 0.5, nd - 0.5, -0.5] .* Δy / 1e3; color=:black, linewidth=1.5)
         Colorbar(figo[row, 2], hm; label=unit(v))
         row += 1
     end
-    Label(figo[row, 1:2], forcing * "\nBlack square: detail-movie region. The full domain has more cells than screen pixels, so this view is " *
-          "downsampled for display; use the detail movie for native resolution.\n" * limits_note * "\n" * CAVEAT;
+    Label(figo[row, 1:2], forcing * "\nBlack square: detail-movie region. Overview " *
+          "shown as 4 × 4-cell (16 m) block averages for display; colour limits are those of the native cells. Use the detail movie for native resolution.\n" * limits_note * "\n" * CAVEAT;
           fontsize=14, color=:gray35, justification=:center, word_wrap=true)
 
     function frame!(n)
         for (d, v) in keyset
             A = anomaly(slice(files[d], v, ids[n])) .* Float32(scale(v))
-            full[(d, v)][] = A
+            full[(d, v)][] = blockavg(A)
             detail[(d, v)][] = A[ix, iy]
         end
         tlabel[] = @sprintf("t = %5.2f h   (frame %d / %d, saved every %.0f min)", times[n], n, length(ids), cfg["slice_minutes"])
@@ -118,8 +121,8 @@ function main(run_dir, out, nmax=typemax(Int))
     # Final-time preview first, so it can be inspected before the movies finish.
     frame!(length(ids)); save(joinpath(out, "xy-detail-final.png"), figd); save(joinpath(out, "xy-overview-final.png"), figo)
     println("PREVIEW ", joinpath(out, "xy-detail-final.png"), " ", joinpath(out, "xy-overview-final.png")); flush(stdout)
-    sd = VideoStream(figd; framerate=24, format="mp4", compression=18, profile="high", pixel_format="yuv420p")
-    so = VideoStream(figo; framerate=24, format="mp4", compression=18, profile="high", pixel_format="yuv420p")
+    sd = VideoStream(figd; px_per_unit=1, framerate=24, format="mp4", compression=18, profile="high", pixel_format="yuv420p")
+    so = VideoStream(figo; px_per_unit=1, framerate=24, format="mp4", compression=18, profile="high", pixel_format="yuv420p")
     t0 = time()
     for n in eachindex(ids)
         frame!(n); recordframe!(sd); recordframe!(so)
@@ -144,7 +147,7 @@ function main(run_dir, out, nmax=typemax(Int))
             println(io, @sprintf("  %s %s: ±%.4g %s, saturated %.2f%%", d == 1 ? "upper" : "lower", v, lims[(d, v)] * scale(v),
                                  v == "w" ? "mm/s" : "mK", 100 * clipped[(d, v)]))
         end
-        println(io, "No temporal interpolation, smoothing or cell interpolation. Overview is downsampled for display only.")
+        println(io, "No temporal interpolation, smoothing or cell interpolation. Overview shows 4 × 4-cell (16 m) block averages for display; limits from native cells.")
         println(io, CAVEAT)
     end
     close(fu); close(fl)
