@@ -182,3 +182,19 @@ Averaged over the last 6 h, mean κₑ is about 2e-3 m²/s from −140 to −60 
 mean ∂T/∂z (about −1.1e-5 K m/s at −100 m, ignoring κ′∂T′/∂z covariance) is about 10 times the resolved ⟨wT⟩ (about 9e-7).
 √(κₑ t) over 48 h is about 19 m, and the deep warming (+0.023 K at −138 m) has the sign expected for downward flux converging at
 the no-flux bottom. This points to AMD subgrid diffusion acting below the mixed layer, but no closure comparison has confirmed it.
+
+## Horizontal-slice animation of production-4m2m
+
+Renderer `src/animate_xy.jl` (CairoMakie), run CPU-only by `slurm/animate_xy.sbatch` (job 9474, git aba0384). It streams one frame
+at a time from `xy_upper.jld2` and `xy_lower.jld2`. Output is in `/shared/greg_aeolus_earth/AngularOceanScattering/animations/production-4m2m-xy/v2`:
+
+- `xy-detail.mp4`: primary movie. Four 1.536 km squares (384 × 384 cells) at native 4 m. H.264 High, 1920×1080, 289 frames at 24 fps (12.0 s).
+- `xy-overview.mp4`: the full 20.48 × 3.60 km domain, shown as 4 × 4-cell (16 m) block averages. H.264 High, 1920×1700, 289 frames, 24 fps.
+- `xy-detail-final.png`, `xy-overview-final.png`: the 48 h frame. `animation-info.txt` records the settings.
+- Final-time PNGs at native resolution for the overview too: `/shared/greg_aeolus_earth/AngularOceanScattering/animations/production-4m2m-xy/xy-*-final.png` (from the cancelled first render, 9435).
+
+Slice depths, from the saved indices: w at faces z = −6 m (k = 78) and −42 m (k = 60); T at centres z = −5 m and −41 m.
+Shown: q′ = q − instantaneous mean over the full slice. Fixed colour limits, the 99.5th percentile of |q′| over 25 evenly spaced
+frames (0.5% of those samples saturate): w′ ±12.78 / ±6.642 mm/s and T′ ±8.488 / ±15.44 mK (upper / lower). There is no
+temporal interpolation or smoothing; the only spatial averaging is the overview's display blocks. Every frame carries
+the failed interior-stratification check as a caveat.
