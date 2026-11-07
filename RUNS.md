@@ -195,6 +195,6 @@ at a time from `xy_upper.jld2` and `xy_lower.jld2`. Output is in `/shared/greg_a
 
 Slice depths, from the saved indices: w at faces z = −6 m (k = 78) and −42 m (k = 60); T at centres z = −5 m and −41 m.
 Shown: q′ = q − instantaneous mean over the full slice. Fixed colour limits, the 99.5th percentile of |q′| over 25 evenly spaced
-frames (0.5% of those samples saturate): w′ ±12.78 / ±6.642 mm/s and T′ ±8.488 / ±15.44 mK (upper / lower). There is no
-temporal interpolation or smoothing; the only spatial averaging is the overview's display blocks. Every frame carries
+frames (0.5% of those samples saturate): w′ ±12.78 / ±6.642 mm/s and T′ ±8.488 / ±15.44 mK (upper / lower). No temporal interpolation anywhere. The detail movie has no spatial smoothing or interpolation. The overview's 4 × 4 block
+averaging is intentional, for display only. Every frame carries
 the failed interior-stratification check as a caveat.
