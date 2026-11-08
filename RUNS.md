@@ -164,7 +164,7 @@ All other checks passed:
 
 Cost: 16 970 steps, 16 267 s (4.52 h) wall including I/O, 958.6 ms/step mean. Slurm elapsed 4:32:33.
 GPU: 66450 MiB by nvidia-smi early in the run (not sampled continuously); CUDA 64.92 of 79.10 GiB at the end. Peak host RSS
-45.9 GiB. Disk: 98 GB, including one 44.8 GB checkpoint. No figure has been made for this run.
+45.9 GiB. Disk: 98 GB, including one 44.8 GB checkpoint. Horizontal movies and final-time figures are available; see the animation section below.
 
 ### Where the interior N² loss occurs (`src/n2_depth.jl`, from `profiles.jld2`)
 
@@ -188,8 +188,8 @@ the no-flux bottom. This points to AMD subgrid diffusion acting below the mixed 
 Renderer `src/animate_xy.jl` (CairoMakie), run CPU-only by `slurm/animate_xy.sbatch` (job 9474, git aba0384). It streams one frame
 at a time from `xy_upper.jld2` and `xy_lower.jld2`. Output is in `/shared/greg_aeolus_earth/AngularOceanScattering/animations/production-4m2m-xy/v2`:
 
-- `xy-detail.mp4`: primary movie. Four 1.536 km squares (384 × 384 cells) at native 4 m. H.264 High, 1920×1080, 289 frames at 24 fps (12.0 s).
-- `xy-overview.mp4`: the full 20.48 × 3.60 km domain, shown as 4 × 4-cell (16 m) block averages. H.264 High, 1920×1700, 289 frames, 24 fps.
+- `xy-detail.mp4`: optional close-up. Four 1.536 km squares (384 × 384 cells) at native 4 m. H.264 High, 1920×1080, 289 frames at 24 fps (12.0 s).
+- `xy-overview.mp4`: primary movie showing the full 20.48 × 3.60 km domain, shown as 4 × 4-cell (16 m) block averages. H.264 High, 1920×1700, 289 frames, 24 fps.
 - `xy-detail-final.png`, `xy-overview-final.png`: the 48 h frame. `animation-info.txt` records the settings.
 - Final-time PNGs at native resolution for the overview too: `/shared/greg_aeolus_earth/AngularOceanScattering/animations/production-4m2m-xy/xy-*-final.png` (from the cancelled first render, 9435).
 

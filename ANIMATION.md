@@ -1,3 +1,21 @@
+# Horizontal-slice animation of the 4 m × 2 m run
+
+The main movie is **`xy-overview.mp4`**, covering the full 20.48 × 3.60 km domain. Download it from the [release](https://github.com/glwagner/AngularOceanScattering/releases/tag/preview-4m2m-48h). It contains 289 frames at 24 fps, spanning 0–48 hours. `xy-overview-final.png` is the final frame.
+
+Four panels show vertical velocity anomalies at z = −6 and −42 m (faces), and temperature anomalies at z = −5 and −41 m (centres). Each anomaly is relative to the instantaneous full-plane mean. The overview uses 4 × 4-cell block averages (16 m display spacing), with fixed colour limits from the 99.5th percentile of absolute anomalies across 25 sampled times. This averaging affects display only. There is no temporal interpolation. Black rectangles mark the optional close-up region.
+
+`xy-detail.mp4` is an optional 1.536 km square close-up at native 4 m spacing. The full-domain movie is the primary presentation.
+
+Render from the saved horizontal slices with Julia/CairoMakie:
+
+```bash
+sbatch --output=animate-xy.log slurm/animate_xy.sbatch RUN_DIR OUTPUT_DIR
+```
+
+The renderer is `src/animate_xy.jl`; the batch script uses existing compilation caches to avoid the shared-depot recompilation issue encountered during rendering. See [RUNS.md](RUNS.md) for validation caveats and exact output settings.
+
+---
+
 # Animation of the original 48-hour run
 
 The Julia renderer in `src/animate.jl` visualizes the existing `production-48h` dataset. It does not rerun the model. The original run has suspect interior mixing; see `RUNS.md`. Conservation checks alone do not establish physical validity.

@@ -1,107 +1,80 @@
 # AngularOceanScattering
 
-Oceananigans large-eddy simulation of a surface-forced ocean boundary layer, built to supply resolved
-velocity and temperature fields along ~10 km paths for acoustic Monte Carlo experiments on angular scattering
-by vortices and sound-speed heterogeneity (context: Colosi & Duda 2026, JASA, DOI 10.1121/10.0046444).
+Three-dimensional Oceananigans large-eddy simulations of a surface-forced ocean boundary layer, providing velocity and temperature fields for acoustic angular-scattering experiments. This repository generates flow data; it does not contain an acoustic solver.
 
-**This repo produces the dataset only: there is no acoustic solver here.**
+## Current run: 4 m horizontal × 2 m vertical
 
-## Scope and limits: read this first
+`production-4m2m` completed **48 simulated hours** on one H100 in **4 h 32 min**. The domain is **20.48 km × 3.60 km × 160 m**, with **5120 × 900 × 80 cells** (368.64 million). Both horizontal directions are periodic; the vertical direction is bounded.
 
-This is a coarse **proof of concept** at 10 m spacing in all directions.
+[**Watch/download the full-domain animation**](https://github.com/glwagner/AngularOceanScattering/releases/download/preview-4m2m-48h/xy-overview.mp4) · [Final full-domain frame](https://github.com/glwagner/AngularOceanScattering/releases/download/preview-4m2m-48h/xy-overview-final.png) · [Movies and diagnostics](https://github.com/glwagner/AngularOceanScattering/releases/tag/preview-4m2m-48h)
 
-- The initial 30 m mixed layer spans **only 3 grid cells**. The surface layer, shear and entrainment are barely
-  resolved and depend on the closure and advection scheme. The vertical grid has deliberately not been refined.
-- It does **not** resolve the metre and sub-metre microstructure discussed in the paper, and it **cannot reproduce
-  absolute scattering amplitudes**. The velocity and sound-speed spectra are truncated near 2-6Δ (20-60 m) by the grid
-  and numerical dissipation.
-- With Ly = 640 m and Lz = 160 m, the domain is narrow and shallow compared with Lx. It contains no submesoscale
-  dynamics, and x is periodic: a 10 km path fits inside the 10.24 km domain and does not repeat eddies. Repetition begins only for paths longer than Lx.
-- A rigid lid is used, so there are no surface waves and no Langmuir turbulence.
-- There is no sponge layer: internal waves reflect from the free-slip, insulating bottom at 160 m.
+![Full-domain horizontal slices at 48 hours](https://github.com/glwagner/AngularOceanScattering/releases/download/preview-4m2m-48h/xy-overview-final.png)
 
-Estimated forcing scales: u* = 7.0e-3 m/s and w* = (B₀h)^(1/3) = 9.0e-3 m/s at h = 30 m, so an eddy turnover
-h/w* takes about 1 h and shear and convection are comparable. These are scale estimates, not results.
+The movie shows horizontal slices of vertical velocity and temperature anomalies near the surface and around 40 m depth over the entire domain. See [ANIMATION.md](ANIMATION.md) for depths, display averaging, and rendering commands. Release assets require repository access while this repository is private.
 
-## Specification
+### Physical setup
 
 | Quantity | Value |
 |---|---|
-| Model | `NonhydrostaticModel`, 3D, Boussinesq; RK3 |
-| Domain | Lx × Ly × Lz = 10240 × 640 × 160 m |
-| Grid | 1024 × 64 × 16, uniform Δ = 10 m (1.05M cells) |
-| Topology | periodic x, periodic y, bounded z (w = 0 at the lid and bottom) |
-| Coriolis | f-plane, f = 1e-4 s⁻¹ |
-| Equation of state | linear, α = 2e-4 K⁻¹, g = 9.81 m/s²; no salinity dynamics |
-| Initial T | 15 °C for z > −30 m; below it, dT/dz = N²/(αg) = 5.10e-3 K/m (N² = 1e-5 s⁻²) |
-| Initial velocity | zero |
-| Seed | Gaussian T noise, σ = 1e-3 K, top 30 m, fixed RNG seed |
-| Surface | stress τx = 0.05 N/m² toward +x; heat loss 50 W/m²; ρ₀ = 1025 kg/m³, cp = 3990 J/kg/K |
-| Bottom | free slip, insulating |
-| Closure and advection | `AnisotropicMinimumDissipation`, WENO order 5 |
-| Time step | `TimeStepWizard`, advective CFL 0.8, diffusive CFL 0.5, `max_Δt` = 150 s |
-| Duration | 48 simulated hours |
+| Model | 3D Boussinesq `NonhydrostaticModel`, RK3 |
+| Grid | Uniform Δx = Δy = 4 m, Δz = 2 m |
+| Forcing | Wind stress 0.05 N/m² toward +x; surface heat loss 50 W/m² |
+| Rotation | f = 10⁻⁴ s⁻¹ |
+| Initial stratification | 30 m mixed layer at 15 °C; N² = 10⁻⁵ s⁻² below |
+| Initial perturbation | 10⁻³ K Gaussian temperature noise in top 30 m, seed 20261106 |
+| Equation of state | Linear, α = 2 × 10⁻⁴ K⁻¹; no salinity dynamics |
+| Closure / advection | Anisotropic Minimum Dissipation / WENO5 |
+| Boundaries | Rigid lid; impermeable, free-slip, insulating bottom; no sponge |
+| Time stepping | Advective CFL 0.4, diffusive CFL 0.5, Δt ≤ 20 s |
+| Precision | Float64 simulation, Float32 field output |
 
-### Flux signs
+### Validation and limitations
 
-Oceananigans boundary fluxes are positive upward:
+Heat and momentum budgets, CFL, final time, and finite-field checks passed. **The interior-stratification screening check failed:** mean N² between 100 and 140 m depth reached 87.3% of its initial value, below the 90% threshold. Loss is concentrated near the bottom and just below the mixed layer. [RUNS.md](RUNS.md) records the measurements and depth dependence.
 
-- Momentum: Jᵘ = −τx/ρ₀ = −4.878e-5 m²/s² (downward flux of +x momentum, which accelerates the ocean toward +x).
-- Heat: Jᵀ = +Q/(ρ₀cp) = +1.2226e-5 K m/s (upward flux, which cools the ocean).
+There is no bottom wave absorber. Internal-wave reflection with associated numerical or subgrid mixing is a plausible explanation, not an established mechanism. A deeper domain with a bottom sponge is a proposed follow-up, not part of this completed run. Conservation alone does not validate the deep flow.
 
-### Time step cap
+This is LES, not DNS: metre and sub-metre microstructure is unresolved, and acoustic applications must check the relevant resolved spatial scales. The rigid lid excludes surface waves and Langmuir forcing. The original 10 m proof of concept is documented separately in [docs/coarse-10m.md](docs/coarse-10m.md).
 
-`max_Δt` = 150 s keeps NΔt ≈ 0.47. The velocities are weak (order 0.01-0.05 m/s), so the 10 m advective limit can exceed
-this, and the cap may hold CFL below 0.8. `steps.csv` records whether it binds, and the run report states the outcome.
+## Reproducing the fine run
 
-## Output
-
-Written as Float32 (`budget.jld2` as Float64) to `/shared/greg_aeolus_earth/AngularOceanScattering/runs/<RUN>/`.
-Simulation data is not kept in git.
-
-| File | Cadence | Contents | Estimated size for 48 h |
-|---|---|---|---|
-| `fields.jld2` | 60 min | u, v, w, T, 3D | ~0.8 GB |
-| `xz_transect.jld2` | 5 min | u, v, w, T at y index 1 | ~0.15 GB |
-| `profiles.jld2` | 5 min | horizontal means of U, V, W, T, second moments, νₑ, κₑ | ~10 MB |
-| `budget.jld2` | 5 min | volume-mean T, u, v, KE | ~1 MB |
-| `checkpoint_iteration*.jld2` | 60 min, newest only | restart state | ~0.1-0.3 GB |
-| `steps.csv`, `config.toml`, `provenance.txt`, `run_summary.txt` | | step log, resolved config, git revision and hardware, timing | small |
-
-Sizes are arithmetic estimates from the grid. Budget about 2 GB.
-Resolved TKE is computed in `src/analyze.jl` as ½(⟨u²⟩−U² + ⟨v²⟩−V² + ⟨w²⟩).
-
-## Running
-
-Julia environment: `Project.toml` and `Manifest.toml`. The job instantiates it on the GPU node because precompile
-caches are CPU-specific. Commit first: the job refuses to start with uncommitted changes, so that the recorded
-revision describes the code that ran.
+Use the pinned Julia environment (`Project.toml`, `Manifest.toml`). The executable retains the original coarse defaults, so **pass the fine-run overrides explicitly**:
 
 ```bash
-# Production: gpuprod holds the H100s
-sbatch --time=H:MM:SS --output=/shared/greg_aeolus_earth/AngularOceanScattering/runs/NAME.log slurm/run.sbatch NAME
-
-# Any parameter can be overridden
-sbatch --time=0:30:00 --output=LOG slurm/run.sbatch pilot stop_hours=2
-
-# Validate against the run's config.toml; loads neither CUDA nor Oceananigans
-sbatch --time=0:30:00 --output=LOG slurm/analyze.sbatch NAME            # numbers only
-sbatch --time=0:40:00 --output=LOG slurm/analyze.sbatch NAME --figure   # plus figure
+sbatch --time=12:00:00 --output=production-4m2m.log slurm/run.sbatch production-4m2m \
+  Nx=5120 Ny=900 Nz=80 Lx=20480 Ly=3600 Lz=160 \
+  cfl=0.4 max_dt=20 stop_hours=48 \
+  full_field_minutes=360 checkpoint_minutes=180
 ```
 
-**Restart.** Rerunning with the same `RUN_NAME` resumes from the newest checkpoint, and requeue after preemption does
-this automatically. Output saved after that checkpoint is removed first so it is not written twice. A resume with
-different physical parameters is refused; only `stop_hours` may change.
+The Slurm launcher is configured for `gcp-slurm` and its `gpuprod` partition; adapt paths and resource directives on other clusters. Commit changes first: the launcher rejects a dirty checkout. Reusing a run name resumes its latest checkpoint; use a fresh name for a new experiment. The production simulation used commit `a0cc4334fa2c12934e65afacf585c014be682c08`.
 
-## Validation (`src/analyze.jl`)
+The largest tested configuration within the chosen GPU memory margin used 66,450 MiB early in the run; this is not a continuously sampled peak. See [RUNS.md](RUNS.md) for capacity probes and runtime details.
 
-The domain has flux-only boundaries, so domain means have exact solutions. These are tested over the whole series:
+## Data and snapshot export
 
-- Heat: ΔT̄(t) = −Jᵀ t / Lz
-- Momentum, a rotating forced slab: U(t) = A sin(ft), V(t) = A (cos(ft) − 1), with A = τx/(ρ₀ Lz f) = 3.05e-3 m/s
+Data stays outside git. Full 3D fields were saved every 6 hours (9 snapshots), horizontal slices every 10 minutes (289 frames), and profiles and vertical sections every 5 minutes. The full run directory is about 104 GB including its restart checkpoint. Movies and small diagnostics are on the release page; bulk simulation output is not a release asset.
 
-The script also checks final time, finite fields and maximum advective CFL, and reports mixed-layer depth and resolved TKE.
+A self-contained **48-hour snapshot is 5,916,787,716 bytes (5.92 GB)**. It contains Float32 `u`, `v`, `w`, and `T`, original staggering, coordinate arrays, units, configuration, provenance, and validation caveats. It can be read with JLD2 alone, without Oceananigans types:
 
-## Results
+```julia
+using JLD2
+jldopen("snapshot-48h.jld2") do f
+    T = f["fields/T/data"]       # index order x, y, z
+    z = f["grid/z_center"]
+end
+```
 
-See `RUNS.md` for job IDs, measured throughput and validation of each run.
+`u`, `v`, and `T` have size 5120 × 900 × 80; `w` has 81 vertical faces. Export with:
+
+```bash
+julia --project=. src/export_snapshot.jl RUN_DIR snapshot-48h.jld2 172800
+```
+
+The exporter refuses overwrite and verifies every exported field against the source. Snapshot SHA-256: `df7dc030b6a5efd85f6095dde6c5602787e843f73a710046ab483ce5ec806d1f`.
+
+Dropbox delivery is being prepared; no verified shared download link is available here yet.
+
+## Scientific context
+
+Colosi & Duda (2026), *Acoustic angular scattering by macro- and micro-scale turbulent vortices and sound speed heterogeneities*, JASA, DOI [10.1121/10.0046444](https://doi.org/10.1121/10.0046444).
