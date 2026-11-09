@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=aos-probe
-#SBATCH --partition=gpuprod
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=180G
@@ -11,7 +10,7 @@
 # Usage: sbatch --time=3:00:00 --output=LOG slurm/probe.sbatch ["NxxNy ..."] [CFL] [MAX_DT]
 set -uo pipefail
 REPO=${AOS_REPO:-$HOME/AngularOceanScattering}
-SCRATCH=${AOS_SCRATCH:-/shared/greg_aeolus_earth/AngularOceanScattering}
+SCRATCH=${AOS_SCRATCH:-$HOME/AngularOceanScattering-data}
 PROBE_ROOT=${AOS_PROBE_ROOT:-$HOME/AngularOceanScattering-data/probe}
 ulimit -v unlimited; unset LD_LIBRARY_PATH
 export JULIA_DEPOT_PATH=$SCRATCH/depot:$(dirname "$(julia --startup-file=no -e 'print(Sys.BINDIR)')")/share/julia

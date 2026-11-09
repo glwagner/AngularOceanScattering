@@ -4,13 +4,13 @@ Three-dimensional Oceananigans large-eddy simulations of a surface-forced ocean 
 
 ## Current run: 4 m horizontal × 2 m vertical
 
-`production-4m2m` completed **48 simulated hours** on one H100 in **4 h 32 min**. The domain is **20.48 km × 3.60 km × 160 m**, with **5120 × 900 × 80 cells** (368.64 million). Both horizontal directions are periodic; the vertical direction is bounded.
+`production-4m2m` completed **48 simulated hours** in **4 h 32 min**. The domain is **20.48 km × 3.60 km × 160 m**, with **5120 × 900 × 80 cells** (368.64 million). Both horizontal directions are periodic; the vertical direction is bounded.
 
 [**Watch/download the full-domain animation**](https://github.com/glwagner/AngularOceanScattering/releases/download/preview-4m2m-48h/xy-overview.mp4) · [Final full-domain frame](https://github.com/glwagner/AngularOceanScattering/releases/download/preview-4m2m-48h/xy-overview-final.png) · [Movies and diagnostics](https://github.com/glwagner/AngularOceanScattering/releases/tag/preview-4m2m-48h)
 
 ![Full-domain horizontal slices at 48 hours](https://github.com/glwagner/AngularOceanScattering/releases/download/preview-4m2m-48h/xy-overview-final.png)
 
-The movie shows horizontal slices of vertical velocity and temperature anomalies near the surface and around 40 m depth over the entire domain. See [ANIMATION.md](ANIMATION.md) for depths, display averaging, and rendering commands. Release assets require repository access while this repository is private.
+The movie shows horizontal slices of vertical velocity and temperature anomalies near the surface and around 40 m depth over the entire domain. See [ANIMATION.md](ANIMATION.md) for depths, display averaging, and rendering commands. The repository and release assets are public.
 
 ### Physical setup
 
@@ -47,9 +47,9 @@ sbatch --time=12:00:00 --output=production-4m2m.log slurm/run.sbatch production-
   full_field_minutes=360 checkpoint_minutes=180
 ```
 
-The Slurm launcher is configured for `gcp-slurm` and its `gpuprod` partition; adapt paths and resource directives on other clusters. Commit changes first: the launcher rejects a dirty checkout. Reusing a run name resumes its latest checkpoint; use a fresh name for a new experiment. The production simulation used commit `a0cc4334fa2c12934e65afacf585c014be682c08`.
+Set the partition with `sbatch --partition=PARTITION` and adapt resource directives for your cluster. Data defaults to `$HOME/AngularOceanScattering-data`; override it with `AOS_SCRATCH`. Commit changes first: the launcher rejects a dirty checkout. Reusing a run name resumes its latest checkpoint; use a fresh name for a new experiment. The production simulation used commit `a0cc4334fa2c12934e65afacf585c014be682c08`.
 
-The largest tested configuration within the chosen GPU memory margin used 66,450 MiB early in the run; this is not a continuously sampled peak. See [RUNS.md](RUNS.md) for capacity probes and runtime details.
+See [RUNS.md](RUNS.md) for grid selection, output sizes, and runtime details. Resource requirements depend on the chosen grid and execution environment.
 
 ## Data and snapshot export
 

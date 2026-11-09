@@ -56,7 +56,7 @@ this, and the cap may hold CFL below 0.8. `steps.csv` records whether it binds, 
 
 ## Output
 
-Written as Float32 (`budget.jld2` as Float64) to `/shared/greg_aeolus_earth/AngularOceanScattering/runs/<RUN>/`.
+Written as Float32 (`budget.jld2` as Float64) to `$HOME/AngularOceanScattering-data/runs/<RUN>/`.
 Simulation data is not kept in git.
 
 | File | Cadence | Contents | Estimated size for 48 h |
@@ -66,7 +66,7 @@ Simulation data is not kept in git.
 | `profiles.jld2` | 5 min | horizontal means of U, V, W, T, second moments, νₑ, κₑ | ~10 MB |
 | `budget.jld2` | 5 min | volume-mean T, u, v, KE | ~1 MB |
 | `checkpoint_iteration*.jld2` | 60 min, newest only | restart state | ~0.1-0.3 GB |
-| `steps.csv`, `config.toml`, `provenance.txt`, `run_summary.txt` | | step log, resolved config, git revision and hardware, timing | small |
+| `steps.csv`, `config.toml`, `provenance.txt`, `run_summary.txt` | | step log, resolved config, git revision and timing | small |
 
 Sizes are arithmetic estimates from the grid. Budget about 2 GB.
 Resolved TKE is computed in `src/analyze.jl` as ½(⟨u²⟩−U² + ⟨v²⟩−V² + ⟨w²⟩).
@@ -78,8 +78,8 @@ caches are CPU-specific. Commit first: the job refuses to start with uncommitted
 revision describes the code that ran.
 
 ```bash
-# Production: gpuprod holds the H100s
-sbatch --time=H:MM:SS --output=/shared/greg_aeolus_earth/AngularOceanScattering/runs/NAME.log slurm/run.sbatch NAME
+# Select a suitable partition for your cluster with --partition=PARTITION
+sbatch --time=H:MM:SS --output=$HOME/AngularOceanScattering-data/runs/NAME.log slurm/run.sbatch NAME
 
 # Any parameter can be overridden
 sbatch --time=0:30:00 --output=LOG slurm/run.sbatch pilot stop_hours=2

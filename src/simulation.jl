@@ -294,6 +294,5 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     @info "Versions" julia=VERSION oceananigans=pkgversion(Oceananigans) cuda=pkgversion(CUDA)
-    CUDA.functional() && @info "GPU" device=CUDA.name(CUDA.device())
     main(parse_config(ARGS))
 end

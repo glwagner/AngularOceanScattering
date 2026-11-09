@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=aos-anim-xy
-#SBATCH --partition=gpua100largex4
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
 #SBATCH --time=06:00:00
@@ -8,7 +7,7 @@
 # CPU-only render of horizontal-slice movies (no GPU requested). Usage: sbatch --output=LOG slurm/animate_xy.sbatch RUN_DIR OUT_DIR [MAX_FRAMES]
 set -euo pipefail
 REPO=${AOS_REPO:-$HOME/AngularOceanScattering}
-SCRATCH=${AOS_SCRATCH:-/shared/greg_aeolus_earth/AngularOceanScattering}
+SCRATCH=${AOS_SCRATCH:-$HOME/AngularOceanScattering-data}
 unset LD_LIBRARY_PATH
 # Same depot stack as the simulation jobs: shared depot plus the bundled stdlib depot.
 export JULIA_DEPOT_PATH=$SCRATCH/depot:$(dirname "$(julia --startup-file=no -e 'print(Sys.BINDIR)')")/share/julia

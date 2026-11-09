@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=aos-export
-#SBATCH --partition=gpua100largex4
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=32G
 #SBATCH --time=02:00:00
@@ -12,7 +11,8 @@ SRC=$1; OUT=$2; FILE=$OUT/snapshot-48h.jld2
 [ -e "$FILE" ] && { echo "refusing to overwrite $FILE"; exit 3; }
 mkdir -p "$OUT"
 unset LD_LIBRARY_PATH
-export JULIA_DEPOT_PATH=/shared/greg_aeolus_earth/AngularOceanScattering/depot:$(dirname "$(julia --startup-file=no -e 'print(Sys.BINDIR)')")/share/julia
+SCRATCH=${AOS_SCRATCH:-$HOME/AngularOceanScattering-data}
+export JULIA_DEPOT_PATH=$SCRATCH/depot:$(dirname "$(julia --startup-file=no -e 'print(Sys.BINDIR)')")/share/julia
 GIT=$(git -C "$REPO" rev-parse HEAD)
 echo "=== $(date -u +%FT%TZ) job=${SLURM_JOB_ID:-} node=$(hostname) git=$GIT dirty=$(git -C "$REPO" status --porcelain | wc -l)"
 julia --startup-file=no --compiled-modules=existing --project="$REPO" "$REPO/src/export_snapshot.jl" "$SRC" "$FILE" 172800 | tee "$OUT/export.log"

@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=aos-diag3
-#SBATCH --partition=gpuprod,gpuprodflex
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=03:00:00
@@ -10,7 +9,7 @@
 # each followed by the bulk analysis and the N² depth / flux diagnostic.
 set -uo pipefail
 REPO=${AOS_REPO:-$HOME/AngularOceanScattering}
-SCRATCH=${AOS_SCRATCH:-/shared/greg_aeolus_earth/AngularOceanScattering}
+SCRATCH=${AOS_SCRATCH:-$HOME/AngularOceanScattering-data}
 ulimit -v unlimited; unset LD_LIBRARY_PATH
 export JULIA_DEPOT_PATH=$SCRATCH/depot:$(dirname "$(julia --startup-file=no -e 'print(Sys.BINDIR)')")/share/julia
 julia --startup-file=no --project="$REPO" -e 'using Pkg; Pkg.instantiate(allow_autoprecomp=false)'

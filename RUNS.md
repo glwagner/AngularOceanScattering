@@ -13,9 +13,8 @@ Coarse 10 m proof of concept; see the limits in `README.md`.
 | Slurm job | 8854, COMPLETED, no requeues; validation job 8860, COMPLETED |
 | Simulation revision | `798aab51728249e5197924f59b4476fc2594e1ab`, clean at launch |
 | Validation revision | `a9c45da7823c9dffe2f8fe4b006be582569f49c2` (analysis and Slurm scripts changed; `simulation.jl` and `Manifest.toml` did not) |
-| Hardware | NVIDIA H100 80GB HBM3, driver 550.90.12, node agcpv2dev-gpunodeset-0 |
 | Software | Julia 1.12.6, Oceananigans 0.117.2, CUDA 6.4.2 |
-| Data | `/shared/greg_aeolus_earth/AngularOceanScattering/runs/production-48h/` (790 MB, not in git); log `/shared/greg_aeolus_earth/AngularOceanScattering/runs/production-48h.log` |
+| Data | `$HOME/AngularOceanScattering-data/runs/production-48h/` (790 MB, not in git); log `$HOME/AngularOceanScattering-data/runs/production-48h.log` |
 
 ### Timing
 
@@ -74,7 +73,7 @@ with u* = 7e-3 m/s and N² = 1e-5 s⁻², the boundary layer is expected to stay
 - At 3 h the x-direction lag-1 autocorrelation of T′ and w is about 0.0-0.2 at z ≈ −125 m and z ≈ −25 m: grid-scale noise, not resolved eddies. By 48 h it rises to 0.5-0.9.
 - So the 32.8 to 45.4 m mixed-layer deepening and the TKE values are not trustworthy as boundary-layer results. The saved heat and momentum budgets still close because they cannot detect interior mixing.
 
-Not yet diagnosed. Untested candidates: the noise seed exciting grid-scale motion, time-stepping at CFL 0.8 with weak forcing (RK3 + WENO on a 10 m grid), and the closure. Bottom reflection and the lack of a sponge may let waves persist. A short sensitivity test on the H100 should separate these.
+Not yet diagnosed. Untested candidates: the noise seed exciting grid-scale motion, time-stepping at CFL 0.8 with weak forcing (RK3 + WENO on a 10 m grid), and the closure. Bottom reflection and the lack of a sponge may let waves persist. A short sensitivity test should separate these.
 
 ## smoke: jobs 8851 and 8852 (restart test)
 
@@ -109,18 +108,9 @@ Fine-box rms w at −100 m is still about 2e-3 m/s; whether that is physical has
 
 Production uses CFL 0.4, `max_dt` 20 s, chosen as a margin: the 12 h box shows no Δt sensitivity between CFL 0.2 and 0.8.
 
-## Capacity probes (real output and one checkpoint, H100 card total 81559 MiB, limit 85% = 69325 MiB)
+## Grid selection
 
-| Grid | Cells | Lx × Ly (km) | nvidia-smi peak | Live / reserved | Host RSS | Checkpoint | Full save |
-|---|---|---|---|---|---|---|---|
-| 1024×256×80 | 21.0M | 4.10 × 1.02 | 4626 MiB (5%) | 3.40 / 3.88 GiB | 4.7 GiB | 2.5 GB | |
-| 2048×256×80 | 41.9M | 8.19 × 1.02 | 8274 MiB (10%) | 6.78 / 7.44 GiB | 6.9 GiB | 4.9 GB | |
-| **5120×900×80** | **368.6M** | **20.48 × 3.60** | **66450 MiB (81%)** | 58.70 / 64.25 GiB | 50.5 GiB | 42 GB | 3.6 GB (each, compressed, early laminar state) |
-| 5120×960×80 | 393.2M | 20.48 × 3.84 | not run: predicted 70826 MiB, over limit | | | | |
-
-Selected: 5120×900×80, the largest tested grid within the limit. Probes ran 30 steps, so these peaks do not cover a long run or a checkpoint from developed turbulence.
-
-Stepping between saves: 0.79 s/step at 368.6M cells. A checkpoint plus full save took about 200 s.
+The selected grid is 5120 × 900 × 80 (368.64 million cells), covering 20.48 × 3.60 km horizontally. Smaller 1024 × 256 × 80 and 2048 × 256 × 80 grids were also tested with output and a checkpoint. The larger 5120 × 960 × 80 candidate was not run. Capacity probes covered only 30 steps, not a long turbulent integration.
 
 ### Storage budget, 48 h (uncompressed worst case), on /home (about 300 GB free)
 
@@ -163,8 +153,7 @@ All other checks passed:
 - x lag-1 correlation of w at 48 h: 0.949 at −20 m, 0.775 at −100 m.
 
 Cost: 16 970 steps, 16 267 s (4.52 h) wall including I/O, 958.6 ms/step mean. Slurm elapsed 4:32:33.
-GPU: 66450 MiB by nvidia-smi early in the run (not sampled continuously); CUDA 64.92 of 79.10 GiB at the end. Peak host RSS
-45.9 GiB. Disk: 98 GB, including one 44.8 GB checkpoint. Horizontal movies and final-time figures are available; see the animation section below.
+Disk: 98 GB, including one 44.8 GB checkpoint. Horizontal movies and final-time figures are available; see the animation section below.
 
 ### Where the interior N² loss occurs (`src/n2_depth.jl`, from `profiles.jld2`)
 
@@ -186,12 +175,12 @@ the no-flux bottom. This points to AMD subgrid diffusion acting below the mixed 
 ## Horizontal-slice animation of production-4m2m
 
 Renderer `src/animate_xy.jl` (CairoMakie), run CPU-only by `slurm/animate_xy.sbatch` (job 9474, git aba0384). It streams one frame
-at a time from `xy_upper.jld2` and `xy_lower.jld2`. Output is in `/shared/greg_aeolus_earth/AngularOceanScattering/animations/production-4m2m-xy/v2`:
+at a time from `xy_upper.jld2` and `xy_lower.jld2`. Output is in `$HOME/AngularOceanScattering-data/animations/production-4m2m-xy/v2`:
 
 - `xy-detail.mp4`: optional close-up. Four 1.536 km squares (384 × 384 cells) at native 4 m. H.264 High, 1920×1080, 289 frames at 24 fps (12.0 s).
 - `xy-overview.mp4`: primary movie showing the full 20.48 × 3.60 km domain, shown as 4 × 4-cell (16 m) block averages. H.264 High, 1920×1700, 289 frames, 24 fps.
 - `xy-detail-final.png`, `xy-overview-final.png`: the 48 h frame. `animation-info.txt` records the settings.
-- Final-time PNGs at native resolution for the overview too: `/shared/greg_aeolus_earth/AngularOceanScattering/animations/production-4m2m-xy/xy-*-final.png` (from the cancelled first render, 9435).
+- Final-time PNGs at native resolution for the overview too: `$HOME/AngularOceanScattering-data/animations/production-4m2m-xy/xy-*-final.png` (from the cancelled first render, 9435).
 
 Slice depths, from the saved indices: w at faces z = −6 m (k = 78) and −42 m (k = 60); T at centres z = −5 m and −41 m.
 Shown: q′ = q − instantaneous mean over the full slice. Fixed colour limits, the 99.5th percentile of |q′| over 25 evenly spaced

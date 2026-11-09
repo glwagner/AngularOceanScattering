@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=aos-les
-#SBATCH --partition=gpuprod
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=180G
@@ -9,11 +8,11 @@
 #SBATCH --open-mode=append
 #
 # Usage:  sbatch --time=H:MM:SS --output=LOG slurm/run.sbatch RUN_NAME [key=value ...]
-# gpuprod holds the H100s and is spot-backed: the job requeues and resumes from its checkpoint.
+# Select a suitable partition with sbatch --partition=PARTITION. Requeued jobs resume from their checkpoint.
 set -euo pipefail
 
 REPO=${AOS_REPO:-$HOME/AngularOceanScattering}
-SCRATCH=${AOS_SCRATCH:-/shared/greg_aeolus_earth/AngularOceanScattering}
+SCRATCH=${AOS_SCRATCH:-$HOME/AngularOceanScattering-data}
 RUN=$1; shift
 RUN_DIR=${AOS_RUNS:-$SCRATCH/runs}/$RUN
 mkdir -p "$RUN_DIR"
@@ -32,7 +31,6 @@ fi
   echo "=== $(date -u +%FT%TZ) job=${SLURM_JOB_ID:-none} restart=${SLURM_RESTART_COUNT:-0} node=$(hostname)"
   echo "git=$(git -C "$REPO" rev-parse HEAD) dirty=$(git -C "$REPO" status --porcelain | wc -l)"
   julia --version
-  nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
   echo "args: $*"
 } | tee -a "$RUN_DIR/provenance.txt"
 

@@ -1,13 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=aos-diag
-#SBATCH --partition=gpuprod
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --open-mode=append
 # Small-box diagnosis of interior mixing, one change at a time. Usage: sbatch --time=2:00:00 --output=LOG slurm/diagnose.sbatch
 set -uo pipefail
 REPO=${AOS_REPO:-$HOME/AngularOceanScattering}
-SCRATCH=${AOS_SCRATCH:-/shared/greg_aeolus_earth/AngularOceanScattering}
+SCRATCH=${AOS_SCRATCH:-$HOME/AngularOceanScattering-data}
 ulimit -v unlimited; unset LD_LIBRARY_PATH
 export JULIA_DEPOT_PATH=$SCRATCH/depot:$(dirname "$(julia --startup-file=no -e 'print(Sys.BINDIR)')")/share/julia
 export JULIA_NUM_PRECOMPILE_TASKS=${SLURM_CPUS_PER_TASK:-1}
